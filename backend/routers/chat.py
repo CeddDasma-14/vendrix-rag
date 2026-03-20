@@ -94,5 +94,6 @@ async def chat_stream(request: ChatRequest):
         headers={
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
+            "Access-Control-Allow-Origin": "*",
         },
     )
