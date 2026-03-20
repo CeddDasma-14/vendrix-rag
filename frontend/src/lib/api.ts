@@ -25,7 +25,7 @@ export async function* streamChat(
     if (done) break;
 
     buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
+    const lines = buffer.split("\n").map((l) => l.replace(/\r$/, ""));
     buffer = lines.pop() ?? "";
 
     for (const line of lines) {
