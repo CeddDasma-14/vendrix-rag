@@ -31,10 +31,10 @@ def _format_history(history: list[Message]) -> list:
 
 
 async def _stream_response(message: str, history: list[Message]):
-    agent = build_agent()
     chat_history = _format_history(history)
 
     try:
+        agent = build_agent()
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None,
@@ -84,6 +84,18 @@ async def _stream_response(message: str, history: list[Message]):
 
     except Exception as e:
         yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
+
+
+@router.get("/test-stream")
+async def test_stream():
+    async def _test():
+        import json
+        for word in ["Hello", " this", " is", " a", " test", " response"]:
+            yield f"data: {json.dumps({'type': 'token', 'content': word})}\n\n"
+            await asyncio.sleep(0.05)
+        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+    return StreamingResponse(_test(), media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Access-Control-Allow-Origin": "*"})
 
 
 @router.post("/stream")

@@ -6,7 +6,28 @@ export async function* streamChat(
   message: string,
   history: Array<{ role: string; content: string }>
 ): AsyncGenerator<StreamEvent> {
-  const response = await fetch(`${API_BASE}/api/chat/stream`, {
+  const response = await fetch(`${API_BASE}/api/chat/test-stream`, {
+    method: "GET",
+  });
+  if (!response.ok || !response.body) throw new Error("Chat request failed");
+  const reader2 = response.body.getReader();
+  const decoder2 = new TextDecoder();
+  let buf2 = "";
+  while (true) {
+    const { done, value } = await reader2.read();
+    if (done) break;
+    buf2 += decoder2.decode(value, { stream: true });
+    const lines2 = buf2.split("\n").map((l) => l.replace(/\r$/, ""));
+    buf2 = lines2.pop() ?? "";
+    for (const line of lines2) {
+      if (line.startsWith("data: ")) {
+        try { yield JSON.parse(line.slice(6)) as StreamEvent; } catch { /* skip */ }
+      }
+    }
+  }
+  return;
+  // eslint-disable-next-line no-unreachable
+  const response2 = await fetch(`${API_BASE}/api/chat/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message, history }),
