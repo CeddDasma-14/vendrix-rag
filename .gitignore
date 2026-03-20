@@ -1,0 +1,29 @@
+# Python
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/faiss_db/
+
+# Environment variables (NEVER commit these)
+.env
+.env.local
+.env.production
+*.env
+
+# Node
+frontend/node_modules/
+node_modules/
+frontend/.next/
+frontend/out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Package locks (optional — keep if you want reproducible installs)
+# package-lock.json
