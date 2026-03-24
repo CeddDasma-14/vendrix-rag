@@ -6,6 +6,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# LangSmith tracing — enabled when LANGCHAIN_API_KEY is set
+if os.getenv("LANGCHAIN_API_KEY"):
+    os.environ.setdefault("LANGCHAIN_TRACING_V2", "true")
+    os.environ.setdefault("LANGCHAIN_PROJECT", "vendrix-rag")
+
 from routers import chat, documents, leads
 from rag.vectorstore import initialize_vectorstore
 
