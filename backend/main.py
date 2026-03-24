@@ -10,6 +10,9 @@ load_dotenv()
 if os.getenv("LANGCHAIN_API_KEY"):
     os.environ.setdefault("LANGCHAIN_TRACING_V2", "true")
     os.environ.setdefault("LANGCHAIN_PROJECT", "vendrix-rag")
+    print(f"[LangSmith] Tracing ON — project: {os.getenv('LANGCHAIN_PROJECT')}, key: {os.getenv('LANGCHAIN_API_KEY')[:12]}...")
+else:
+    print("[LangSmith] LANGCHAIN_API_KEY not set — tracing disabled")
 
 from routers import chat, documents, leads
 from rag.vectorstore import initialize_vectorstore
