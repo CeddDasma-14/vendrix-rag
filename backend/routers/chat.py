@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from langchain_core.messages import HumanMessage, AIMessage
+from langsmith import traceable
 from agent.agent import build_agent
 from rag.retriever import retrieve
 
@@ -35,13 +36,15 @@ async def _stream_response(message: str, history: list[Message]):
 
     try:
         agent = build_agent()
+
+        @traceable(run_type="chain", name="vendrix-agent")
+        def run_agent(input_text, history):
+            return agent.invoke({"input": input_text, "chat_history": history})
+
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None,
-            lambda: agent.invoke({
-                "input": message,
-                "chat_history": chat_history,
-            }),
+            lambda: run_agent(message, chat_history),
         )
 
         # Emit each tool call used

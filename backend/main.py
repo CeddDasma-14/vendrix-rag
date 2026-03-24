@@ -21,18 +21,6 @@ from rag.vectorstore import initialize_vectorstore
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await initialize_vectorstore()
-    # Test LangSmith connectivity
-    if os.getenv("LANGCHAIN_API_KEY"):
-        try:
-            import httpx
-            r = httpx.get(
-                "https://api.smith.langchain.com/api/v1/workspaces",
-                headers={"x-api-key": os.getenv("LANGCHAIN_API_KEY")},
-                timeout=10,
-            )
-            print(f"[LangSmith] Workspaces API: {r.status_code} — {r.text[:300]}")
-        except Exception as e:
-            print(f"[LangSmith] Connection failed: {e}")
     yield
 
 
