@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Settings, Zap, ArrowLeft } from "lucide-react";
+import { Settings, Zap, ArrowLeft, BarChart2 } from "lucide-react";
 import ChatWindow from "@/components/ChatWindow";
 
 export default function HomePage() {
@@ -30,6 +30,13 @@ export default function HomePage() {
           >
             <ArrowLeft size={13} />
             <span className="hidden sm:inline">Home</span>
+          </Link>
+          <Link
+            href="/monitoring"
+            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-200 transition-colors duration-200 px-2.5 py-1.5 rounded-lg hover:bg-slate-800/60 cursor-pointer"
+          >
+            <BarChart2 size={13} />
+            Monitoring
           </Link>
           <Link
             href="/admin"

@@ -60,3 +60,9 @@ export async function listLeads() {
   const res = await fetch(`${API_BASE}/api/leads/`);
   return res.json();
 }
+
+export async function getMonitoringStats() {
+  const res = await fetch(`${API_BASE}/api/monitoring/stats`);
+  if (!res.ok) throw new Error("Failed to fetch monitoring stats");
+  return res.json();
+}
