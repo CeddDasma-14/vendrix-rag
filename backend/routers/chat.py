@@ -1,5 +1,6 @@
 import json
 import asyncio
+import time
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -7,6 +8,8 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langsmith import traceable
 from agent.agent import build_agent
 from rag.retriever import retrieve
+from monitoring.logger import log_chat, save_evaluation
+from monitoring.evaluator import evaluate_response
 
 router = APIRouter()
 
@@ -38,6 +41,7 @@ def _format_history(history: list[Message]) -> list:
 
 async def _stream_response(message: str, history: list[Message]):
     chat_history = _format_history(history)
+    start_time = time.time()
 
     try:
         agent = build_agent()
@@ -49,6 +53,7 @@ async def _stream_response(message: str, history: list[Message]):
 
         # Emit each tool call used
         intermediate_steps = result.get("intermediate_steps", [])
+        tool_calls_used = [action.tool for action, _ in intermediate_steps]
         for action, _ in intermediate_steps:
             event = {"type": "tool_call", "tool": action.tool}
             yield f"data: {json.dumps(event)}\n\n"
@@ -56,7 +61,6 @@ async def _stream_response(message: str, history: list[Message]):
 
         # Stream output word by word for a typing effect
         raw_output = result.get("output", "")
-        # Newer LangChain returns a list of content blocks — extract text
         if isinstance(raw_output, list):
             output = " ".join(
                 block.get("text", "") for block in raw_output if isinstance(block, dict)
@@ -85,8 +89,44 @@ async def _stream_response(message: str, history: list[Message]):
 
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
+        # Log and evaluate in background — don't block the response
+        response_time_ms = int((time.time() - start_time) * 1000)
+        asyncio.create_task(_log_and_evaluate(
+            message, output, tool_calls_used, sources, response_time_ms
+        ))
+
     except Exception as e:
+        response_time_ms = int((time.time() - start_time) * 1000)
+        asyncio.create_task(_log_and_evaluate(
+            message, f"ERROR: {e}", [], [], response_time_ms, success=False
+        ))
         yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
+
+
+async def _log_and_evaluate(
+    user_message: str,
+    agent_response: str,
+    tool_calls: list,
+    sources: list,
+    response_time_ms: int,
+    success: bool = True,
+):
+    try:
+        log_id = log_chat(
+            user_message=user_message,
+            agent_response=agent_response,
+            tool_calls=tool_calls,
+            sources=sources,
+            response_time_ms=response_time_ms,
+            success=success,
+        )
+        if success and agent_response:
+            scores = await evaluate_response(user_message, agent_response)
+            if scores:
+                save_evaluation(log_id, scores)
+                print(f"[Monitoring] Logged #{log_id} | {response_time_ms}ms | scores: {scores}")
+    except Exception as e:
+        print(f"[Monitoring] Log failed: {e}")
 
 
 @router.get("/test-stream")

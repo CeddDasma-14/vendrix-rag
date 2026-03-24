@@ -14,12 +14,14 @@ if os.getenv("LANGCHAIN_API_KEY"):
 else:
     print("[LangSmith] LANGCHAIN_API_KEY not set — tracing disabled")
 
-from routers import chat, documents, leads
+from routers import chat, documents, leads, monitoring
 from rag.vectorstore import initialize_vectorstore
+from monitoring.logger import init_db
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    init_db()
     await initialize_vectorstore()
     yield
 
@@ -41,6 +43,7 @@ app.add_middleware(
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
 app.include_router(leads.router, prefix="/api/leads", tags=["leads"])
+app.include_router(monitoring.router, prefix="/api/monitoring", tags=["monitoring"])
 
 
 @app.get("/health")
