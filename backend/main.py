@@ -24,15 +24,13 @@ async def lifespan(app: FastAPI):
     # Test LangSmith connectivity
     if os.getenv("LANGCHAIN_API_KEY"):
         try:
-            from langsmith import Client
-            client = Client()
-            client.create_run(
-                name="startup-ping",
-                run_type="chain",
-                project_name=os.getenv("LANGCHAIN_PROJECT", "vendrix-rag"),
-                inputs={"event": "startup"},
+            import httpx
+            r = httpx.get(
+                "https://api.smith.langchain.com/api/v1/workspaces",
+                headers={"x-api-key": os.getenv("LANGCHAIN_API_KEY")},
+                timeout=10,
             )
-            print("[LangSmith] Startup ping sent — check smith.langchain.com")
+            print(f"[LangSmith] Workspaces API: {r.status_code} — {r.text[:300]}")
         except Exception as e:
             print(f"[LangSmith] Connection failed: {e}")
     yield
