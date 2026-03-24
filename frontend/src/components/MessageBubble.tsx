@@ -28,7 +28,7 @@ function TypingDots() {
 function AIAvatar() {
   return (
     <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-lg shadow-indigo-500/20">
-      <span className="text-[10px] font-bold text-white tracking-wide">AI</span>
+      <span className="text-[10px] font-bold text-white tracking-wide">C</span>
     </div>
   );
 }
