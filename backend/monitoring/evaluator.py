@@ -22,7 +22,7 @@ Return ONLY valid JSON with these exact keys:
 Scoring guide:
 - relevance: Does the response directly address the user's question?
 - accuracy: Is the information factually correct and grounded?
-- hallucination: Did the agent invent facts, numbers, or features not in context?
+- hallucination: Set true ONLY if the agent clearly invented specific facts (fake names, made-up numbers, false claims). Set false if the agent said "I don't know", cited sources, or gave plausible product information. Admitting uncertainty is NOT hallucination.
 - completeness: Does the response fully answer the question?"""
 
 
