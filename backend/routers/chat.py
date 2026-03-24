@@ -10,6 +10,7 @@ from agent.agent import build_agent
 from rag.retriever import retrieve
 from monitoring.logger import log_chat, save_evaluation
 from monitoring.evaluator import evaluate_response
+from monitoring.prompts import pick_prompt_version, get_prompt
 
 router = APIRouter()
 
@@ -42,9 +43,10 @@ def _format_history(history: list[Message]) -> list:
 async def _stream_response(message: str, history: list[Message]):
     chat_history = _format_history(history)
     start_time = time.time()
+    prompt_version = pick_prompt_version()
 
     try:
-        agent = build_agent()
+        agent = build_agent(system_prompt=get_prompt(prompt_version))
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None,
@@ -92,13 +94,15 @@ async def _stream_response(message: str, history: list[Message]):
         # Log and evaluate in background — don't block the response
         response_time_ms = int((time.time() - start_time) * 1000)
         asyncio.create_task(_log_and_evaluate(
-            message, output, tool_calls_used, sources, response_time_ms
+            message, output, tool_calls_used, sources, response_time_ms,
+            prompt_version=prompt_version
         ))
 
     except Exception as e:
         response_time_ms = int((time.time() - start_time) * 1000)
         asyncio.create_task(_log_and_evaluate(
-            message, f"ERROR: {e}", [], [], response_time_ms, success=False
+            message, f"ERROR: {e}", [], [], response_time_ms,
+            success=False, prompt_version=prompt_version
         ))
         yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
 
@@ -110,6 +114,7 @@ async def _log_and_evaluate(
     sources: list,
     response_time_ms: int,
     success: bool = True,
+    prompt_version: str = "A",
 ):
     try:
         log_id = log_chat(
@@ -119,6 +124,7 @@ async def _log_and_evaluate(
             sources=sources,
             response_time_ms=response_time_ms,
             success=success,
+            prompt_version=prompt_version,
         )
         if success and agent_response:
             scores = await evaluate_response(user_message, agent_response)

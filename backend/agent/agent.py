@@ -30,7 +30,7 @@ Hard rules:
 - When a prospect is clearly ready, proactively offer to book a demo"""
 
 
-def build_agent() -> AgentExecutor:
+def build_agent(system_prompt: str | None = None) -> AgentExecutor:
     llm = ChatAnthropic(
         model="claude-sonnet-4-6",
         api_key=os.getenv("ANTHROPIC_API_KEY"),
@@ -40,7 +40,7 @@ def build_agent() -> AgentExecutor:
     tools = get_tools()
 
     prompt = ChatPromptTemplate.from_messages([
-        ("system", SYSTEM_PROMPT),
+        ("system", system_prompt or SYSTEM_PROMPT),
         MessagesPlaceholder("chat_history"),
         ("human", "{input}"),
         MessagesPlaceholder("agent_scratchpad"),
