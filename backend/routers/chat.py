@@ -11,6 +11,11 @@ from rag.retriever import retrieve
 router = APIRouter()
 
 
+@traceable(run_type="chain", name="vendrix-agent")
+def run_agent(agent, input_text: str, history: list) -> dict:
+    return agent.invoke({"input": input_text, "chat_history": history})
+
+
 class Message(BaseModel):
     role: str
     content: str
@@ -36,15 +41,10 @@ async def _stream_response(message: str, history: list[Message]):
 
     try:
         agent = build_agent()
-
-        @traceable(run_type="chain", name="vendrix-agent")
-        def run_agent(input_text, history):
-            return agent.invoke({"input": input_text, "chat_history": history})
-
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None,
-            lambda: run_agent(message, chat_history),
+            lambda: run_agent(agent, message, chat_history),
         )
 
         # Emit each tool call used
