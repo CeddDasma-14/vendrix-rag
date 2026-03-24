@@ -21,6 +21,20 @@ from rag.vectorstore import initialize_vectorstore
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await initialize_vectorstore()
+    # Test LangSmith connectivity
+    if os.getenv("LANGCHAIN_API_KEY"):
+        try:
+            from langsmith import Client
+            client = Client()
+            client.create_run(
+                name="startup-ping",
+                run_type="chain",
+                project_name=os.getenv("LANGCHAIN_PROJECT", "vendrix-rag"),
+                inputs={"event": "startup"},
+            )
+            print("[LangSmith] Startup ping sent — check smith.langchain.com")
+        except Exception as e:
+            print(f"[LangSmith] Connection failed: {e}")
     yield
 
 
