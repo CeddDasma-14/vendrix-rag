@@ -1,8 +1,41 @@
+import os
+import asyncio
 from langchain_core.tools import tool
 from rag.retriever import retrieve
 
 # In-memory lead store — swap for a DB in production
 _leads: list[dict] = []
+
+
+async def _send_lead_email(lead: dict) -> None:
+    api_key = os.getenv("RESEND_API_KEY")
+    notify_email = os.getenv("NOTIFY_EMAIL")
+    if not api_key or not notify_email:
+        return
+
+    try:
+        import resend
+        resend.api_key = api_key
+        body = (
+            f"New qualified lead captured by the Vendrix AI agent.\n\n"
+            f"Name:      {lead['name']}\n"
+            f"Company:   {lead['company']}\n"
+            f"Use case:  {lead['use_case']}\n"
+            f"Budget:    {lead['budget']}\n"
+            f"Timeline:  {lead['timeline']}\n"
+        )
+        await asyncio.to_thread(
+            resend.Emails.send,
+            {
+                "from": "Vendrix Leads <onboarding@resend.dev>",
+                "to": notify_email,
+                "subject": f"🎯 New Lead: {lead['name']} — {lead['company']}",
+                "text": body,
+            },
+        )
+        print(f"[Leads] Email sent for {lead['name']} at {lead['company']}")
+    except Exception as e:
+        print(f"[Leads] Email failed: {e}")
 
 
 @tool
@@ -35,6 +68,11 @@ def qualify_lead(
         "status": "qualified",
     }
     _leads.append(lead)
+    try:
+        loop = asyncio.get_running_loop()
+        loop.create_task(_send_lead_email(lead))
+    except RuntimeError:
+        pass  # No running loop
     return (
         f"Lead saved: {name} from {company}. "
         f"Use case: {use_case}. Budget: {budget}. Timeline: {timeline}."
