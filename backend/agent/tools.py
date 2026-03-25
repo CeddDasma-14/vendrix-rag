@@ -6,6 +6,36 @@ from rag.retriever import retrieve
 _leads: list[dict] = []
 
 
+def _send_prospect_confirmation(name: str, email: str, preferred_time: str) -> None:
+    api_key = os.getenv("RESEND_API_KEY")
+    if not api_key:
+        return
+    try:
+        import resend
+        resend.api_key = api_key
+        body = (
+            f"Hi {name},\n\n"
+            f"Thanks for your interest in Vendrix! Your demo has been booked.\n\n"
+            f"Here's what happens next:\n"
+            f"- Our team will confirm your preferred time: {preferred_time}\n"
+            f"- You'll receive a personalised agenda before the call\n"
+            f"- Come prepared with any questions about your workflow needs\n\n"
+            f"In the meantime, feel free to explore more at vendrix-rag.vercel.app\n\n"
+            f"Talk soon,\n"
+            f"Cedy Dasmarinas\n"
+            f"CEO, Vendrix"
+        )
+        resend.Emails.send({
+            "from": "Vendrix <onboarding@resend.dev>",
+            "to": email,
+            "subject": "Your Vendrix demo is confirmed!",
+            "text": body,
+        })
+        print(f"[Leads] Confirmation email sent to {email}")
+    except Exception as e:
+        print(f"[Leads] Confirmation email failed: {e}")
+
+
 def _send_lead_email(lead: dict) -> None:
     api_key = os.getenv("RESEND_API_KEY")
     notify_email = os.getenv("NOTIFY_EMAIL")
@@ -95,12 +125,13 @@ def handle_objection(objection_type: str) -> str:
 def book_demo(name: str, email: str, preferred_time: str = "any time") -> str:
     """Book a product demo for an interested prospect.
     Call this when a prospect explicitly asks for a demo or says they want to see the product."""
+    _send_prospect_confirmation(name, email, preferred_time)
     return (
         f"Demo booked!\n"
         f"Name: {name}\n"
         f"Email: {email}\n"
         f"Preferred time: {preferred_time}\n\n"
-        f"A calendar invite will be sent to {email} within the next 2 hours. "
+        f"A confirmation email has been sent to {email}. "
         f"Our team will confirm the exact time and send a personalised agenda."
     )
 
